@@ -1,0 +1,36 @@
+# Delphi compiled output
+*.dcu
+*.dcp
+*.dcpil
+*.dcuil
+*.exe
+*.dll
+*.bpl
+*.res
+*.map
+*.local
+
+# Delphi project local settings
+*.dproj.local
+*.identcache
+*.tvsconfig
+
+# RAD Studio output directories
+__history/
+__recovery/
+Win32/
+Win64/
+Android/
+Android64/
+iOSDevice64/
+OSX64/
+
+# Temp folder
+Temp/
+
+# Config file with API keys — do not commit!
+DelphiLoop.xml
+
+# IDE metadata
+*.dsk
+*.vlb

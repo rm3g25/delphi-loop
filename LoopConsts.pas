@@ -36,7 +36,7 @@ const
   OPENAI_CHAT_PATH         = '/v1/chat/completions';
 
   // API response fields
-  OPENAI_DEFAULT_MAX_TOKENS= 2048;
+  OPENAI_MAX_TOKENS        = 2048;
   NO_ISSUES_MARKER         = 'NO_ISSUES';
 
   // Markdown strip tokens

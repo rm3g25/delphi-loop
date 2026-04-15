@@ -5,7 +5,7 @@
 
 ![Delphi](https://img.shields.io/badge/Delphi-Object%20Pascal-red?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.1-green?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.2-green?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey?style=flat-square)
 
 ---
@@ -16,7 +16,7 @@ DelphiLoop is a desktop application that runs an agentic **generate → review �
 
 You write a task. The **Executor** model generates Delphi code. The **Reviewer** model inspects it for bugs, memory leaks, logic errors, and bad practices. If issues are found, the Executor fixes them. This continues until the Reviewer says `NO_ISSUES` — or the iteration limit is reached.
 
-It works with local models via **Ollama** and cloud models via **OpenAI** (or any OpenAI-compatible API). You can mix and match — local executor, cloud reviewer, or the other way around.
+It works with local models via **Ollama** and cloud models via **OpenAI** or **OpenRouter** (or any OpenAI-compatible API). You can mix and match — local executor, cloud reviewer, or the other way around.
 
 ---
 
@@ -30,8 +30,9 @@ It works with local models via **Ollama** and cloud models via **OpenAI** (or an
 
 - **Agentic loop** — generate → review → refine, up to N iterations
 - **Two independent agents** — Executor writes, Reviewer criticizes
-- **Multi-provider support** — Ollama, OpenAI, any OpenAI-compatible endpoint
+- **Multi-provider support** — Ollama, OpenAI, OpenRouter, any OpenAI-compatible endpoint
 - **Model mixing** — local + cloud, any combination
+- **External prompts** — override agent behavior via markdown files, no recompile needed
 - **Persistent XML config** — providers, models, and settings saved between sessions
 - **Settings UI** — add/edit/remove providers and models without touching config files
 - **Token counter** — tracks tokens used and estimated cost per session
@@ -85,6 +86,8 @@ DelphiLoop.dpr
 ├── LoopEngine.pas            ← All agent logic, HTTP, JSON parsing
 │                               Communicates via callbacks only
 │
+├── LoopPrompts.pas           ← Loads prompts from .md files or falls back to constants
+│
 ├── LoopConfig.pas            ← TLoopConfig (data) + TLoopConfigIO (XML)
 │                               Uses TList<T> generics
 │
@@ -113,32 +116,23 @@ Because the engine only knows about callbacks, the same `LoopEngine` can run in 
 
 ## Prompts
 
-All prompts live in `LoopConsts.pas` and can be tuned without touching logic:
+Starting from v0.2, prompts are loaded from external markdown files placed next to the executable:
 
-**Executor prompt:**
 ```
-You are a senior Delphi developer.
-Write clean, compilable Delphi code for the task below.
-Do NOT add features not mentioned in the task.
-Reply with Delphi code ONLY. No markdown, no explanation.
+prompt_executor.md
+prompt_reviewer.md
+prompt_refine.md
 ```
 
-**Reviewer prompt:**
-```
-You are a strict Delphi code reviewer.
-Check ONLY: bugs, memory leaks, logic errors, compilation errors, bad practices.
-Do NOT suggest new features, thread safety, or anything not required by the original task.
-Be specific — reference exact line or method names.
-If code correctly implements the task with no bugs, reply with exactly: NO_ISSUES
-```
+If a file is missing, DelphiLoop falls back to built-in defaults in `LoopConsts.pas`. This means you can tune agent behavior without recompiling — just edit the file and run again.
 
-**Refine prompt:**
-```
-You are a senior Delphi developer.
-Fix ONLY the issues listed in the review below.
-Do NOT add new features or change working code.
-Reply with corrected Delphi code ONLY. No markdown.
-```
+The default prompts are inspired by [Andrej Karpathy's agent skill guidelines](https://github.com/forrestchang/andrej-karpathy-skills), adapted for non-interactive code generation agents:
+
+**Executor** — states assumptions before writing, generates minimum working code, no speculative abstractions.
+
+**Reviewer** — flags only real bugs in Delphi/Object Pascal context, ignores style and unrelated code, references exact method names.
+
+**Refine** — touches only what the review explicitly listed. Every changed line traces to a specific issue.
 
 ---
 
@@ -150,6 +144,7 @@ Reply with corrected Delphi code ONLY. No markdown.
 - **Windows** 10/11
 - **Ollama** (optional, for local models) — [ollama.com](https://ollama.com)
 - **OpenAI API key** (optional, for cloud models)
+- **OpenRouter API key** (optional) — [openrouter.ai](https://openrouter.ai)
 
 ### Build
 
@@ -162,11 +157,12 @@ No third-party components. No GetIt packages. Pure VCL.
 
 ### First Run
 
-On first launch, DelphiLoop creates a default `DelphiLoop.xml` config file next to the executable with two providers and four models pre-configured:
+On first launch, DelphiLoop creates a default `DelphiLoop.xml` config file next to the executable with three providers and six models pre-configured:
 
 **Providers:**
 - `Ollama (local)` — `http://localhost:11434`
 - `OpenAI` — `https://api.openai.com`
+- `OpenRouter` — `https://openrouter.ai/api`
 
 **Models:**
 - `qwen2.5-coder:7b` (Ollama)
@@ -174,8 +170,9 @@ On first launch, DelphiLoop creates a default `DelphiLoop.xml` config file next 
 - `gpt-4o` (OpenAI)
 - `gpt-4o-mini` (OpenAI)
 - `gpt-5` (OpenAI)
+- `Qwen3 Coder` (OpenRouter)
 
-To use OpenAI models, open **Settings** and edit the OpenAI provider to add your API key.
+To use OpenAI or OpenRouter models, open **Settings** and edit the provider to add your API key.
 
 ---
 
@@ -184,38 +181,29 @@ To use OpenAI models, open **Settings** and edit the OpenAI provider to add your
 All configuration is stored in `DelphiLoop.xml` (same directory as the executable).
 
 ```xml
-<DelphiLoop version="0.1">
+<DelphiLoop version="0.2">
   <Settings>
     <MaxIterations>4</MaxIterations>
-    <Language>Delphi / Object Pascal</Language>
-    <ExecutorIdx>0</ExecutorIdx>
+    <ExecutorIdx>5</ExecutorIdx>
     <ReviewerIdx>2</ReviewerIdx>
   </Settings>
   <Providers>
     <Provider>
-      <Name>Ollama (local)</Name>
-      <BaseURL>http://localhost:11434</BaseURL>
-      <APIKey></APIKey>
-      <Type>Ollama</Type>
-    </Provider>
-    <Provider>
-      <Name>OpenAI</Name>
-      <BaseURL>https://api.openai.com</BaseURL>
-      <APIKey>sk-...</APIKey>
+      <Name>OpenRouter</Name>
+      <BaseURL>https://openrouter.ai/api</BaseURL>
+      <APIKey>sk-or-...</APIKey>
       <Type>OpenAI</Type>
     </Provider>
   </Providers>
   <Models>
     <Model>
-      <DisplayName>gpt-4o-mini  (OpenAI)</DisplayName>
-      <ModelID>gpt-4o-mini</ModelID>
-      <ProviderIdx>1</ProviderIdx>
+      <DisplayName>Qwen3 Coder  (OpenRouter)</DisplayName>
+      <ModelID>qwen/qwen3-coder</ModelID>
+      <ProviderIdx>2</ProviderIdx>
     </Model>
   </Models>
 </DelphiLoop>
 ```
-
-You can add any OpenAI-compatible provider — OpenRouter, Groq, Mistral, local LM Studio, etc.
 
 ---
 
@@ -226,7 +214,7 @@ You can add any OpenAI-compatible provider — OpenRouter, Groq, Mistral, local 
 3. Enter Name, Base URL, API Key, and Type (`OpenAI / Compatible`)
 4. Click **OK**
 5. In the **Models** section, click **+ add**
-6. Enter Display Name, Model ID (e.g. `mistral-7b-instruct`), and select your provider
+6. Enter Display Name, Model ID, and select your provider
 7. Click **OK** → **Close**
 
 Settings are saved automatically on close.
@@ -235,21 +223,22 @@ Settings are saved automatically on close.
 
 ## Model Recommendations
 
-Based on initial experiments with Delphi code generation:
+Based on experiments with Delphi code generation:
 
 | Pair | Iterations | Quality | Cost |
 |---|---|---|---|
-| gpt-4o-mini → gpt-4o | ~1 | ★★★★★ | Low |
-| qwen2.5-coder:7b → gpt-4o | ~4 | ★★★ | Low |
-| gpt-4o → gpt-4o-mini | ~3 | ★★★★ | Medium |
-| gpt-4o → gpt-4o | ~3 | ★★★★★ | High |
+| Qwen3 Coder → gpt-4o | ~2 | ★★★★★ | Low |
+| gpt-4o-mini → gpt-4o | ~3 | ★★★★★ | Low |
+| qwen2.5-coder:7b → gpt-4o | ~4 | ★★★ | Free* |
+| gpt-4o → gpt-4o | ~2 | ★★★★★ | High |
 
-**Best value:** `gpt-4o-mini` as Executor, `gpt-4o` as Reviewer.  
+**Best value:** `Qwen3 Coder` (OpenRouter) as Executor, `gpt-4o` as Reviewer — ~$0.01 per run.  
 **Best quality:** `gpt-4o` as both.  
-**Free option:** `qwen2.5-coder:7b` as Executor, `gpt-4o` as Reviewer (requires Ollama + OpenAI).  
 **Fully local (free):** `qwen2.5-coder:7b` as Executor, `llama3.1:8b` as Reviewer.
 
-> These are early results. More systematic benchmarks are coming in a future article.
+*Requires Ollama locally + OpenAI key for reviewer.
+
+> More systematic benchmarks are coming in a future article.
 
 ---
 
@@ -262,12 +251,11 @@ Approximate prices used for cost estimation (per token):
 | gpt-4o | ~$10.00 / 1M tokens |
 | gpt-4o-mini | ~$0.375 / 1M tokens |
 
-Cost is tracked per session and shown in the status bar.
+OpenRouter returns actual cost per request in the API response — visible in the log.
 
 ---
 
 ## Roadmap
-
 
 - [ ] Per-model token pricing in config
 - [ ] Pass original task to refine context
@@ -277,7 +265,23 @@ Cost is tracked per session and shown in the status bar.
 - [ ] Benchmark mode — run same task N times, compare pairs
 - [ ] Export results to file
 - [ ] FMX Android port (engine is already platform-agnostic)
-- [ ] Plugin system for custom reviewers
+
+---
+
+## Changelog
+
+### v0.2
+- **OpenRouter support** — added as a built-in provider; any OpenAI-compatible endpoint works out of the box
+- **External prompts** — agent prompts moved to `prompt_executor.md`, `prompt_reviewer.md`, `prompt_refine.md`; built-in constants remain as fallback
+- **Modernized prompt design** — prompts redesigned using principles from [Andrej Karpathy's agent skill guidelines](https://github.com/forrestchang/andrej-karpathy-skills): state assumptions before writing, minimum code only, surgical fixes in refine
+- **Dropped C++ Builder** — DelphiLoop is Delphi-only; language selector removed from settings
+- **Default model updated** — Qwen3 Coder 480B via OpenRouter is now the recommended executor
+
+### v0.1
+- Initial release
+- Generate → review → refine loop
+- Ollama + OpenAI support
+- Persistent XML config, settings UI, token counter
 
 ---
 

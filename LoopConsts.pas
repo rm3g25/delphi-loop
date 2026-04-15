@@ -1,16 +1,16 @@
-﻿unit LoopConsts;
+unit LoopConsts;
 
 interface
 
 const
   // App
   APP_TITLE   = 'DelphiLoop';
-  APP_VERSION = '0.1';
+  APP_VERSION = '0.2';
 
   // Defaults
   DEFAULT_MAX_ITERATIONS   = 4;
-  DEFAULT_EXECUTOR_INDEX   = 0;
-  DEFAULT_REVIEWER_INDEX   = 2;
+  DEFAULT_EXECUTOR_INDEX   = 5;  // Qwen3 Coder (OpenRouter)
+  DEFAULT_REVIEWER_INDEX   = 2;  // gpt-4o
 
   // Default providers
   PROVIDER_OLLAMA_NAME     = 'Ollama (local)';
@@ -18,6 +18,11 @@ const
   PROVIDER_OPENAI_NAME     = 'OpenAI';
   PROVIDER_OPENAI_URL      = 'https://api.openai.com';
   PROVIDER_OPENAI_KEY      = 'sk-YOUR-KEY-HERE';
+
+  // OpenRouter (OpenAI-compatible)
+  PROVIDER_OPENROUTER_NAME = 'OpenRouter';
+  PROVIDER_OPENROUTER_URL  = 'https://openrouter.ai/api';
+  PROVIDER_OPENROUTER_KEY  = 'sk-YOUR-OPENROUTER-KEY-HERE';
 
   // Default models
   MODEL_QWEN_DISPLAY       = 'qwen2.5-coder:7b  (local)';
@@ -30,6 +35,10 @@ const
   MODEL_GPT4O_MINI_ID      = 'gpt-4o-mini';
   MODEL_GPT5_DISPLAY       = 'gpt-5  (OpenAI)';
   MODEL_GPT5_ID            = 'gpt-5';
+
+  // OpenRouter models
+  MODEL_QWEN36_DISPLAY     = 'Qwen3 Coder  (OpenRouter)';
+  MODEL_QWEN36_ID          = 'qwen/qwen3-coder';
 
   // API paths
   OLLAMA_GENERATE_PATH     = '/api/generate';
@@ -47,7 +56,7 @@ const
   // Prompts
   PROMPT_EXECUTOR =
     'You are a senior Delphi developer. ' +
-    'Write clean, compilable Delphi code for the task below. ' +
+    'Write clean, compilable Delphi / Object Pascal code for the task below. ' +
     'Do NOT add features not mentioned in the task. ' +
     'Reply with Delphi code ONLY. No markdown, no explanation.' + #10;
 
@@ -64,7 +73,7 @@ const
     'You are a senior Delphi developer. ' +
     'Fix ONLY the issues listed in the review below. ' +
     'Do NOT add new features or change working code. ' +
-    'Reply with corrected Delphi code ONLY. No markdown.' + #10;
+    'Reply with corrected Delphi / Object Pascal code ONLY. No markdown.' + #10;
 
   PROMPT_REFINE_CODE_LABEL   = 'Code:' + #10;
   PROMPT_REFINE_REVIEW_LABEL = 'Review:' + #10;
@@ -105,12 +114,10 @@ const
   COST_FORMAT        = '$0.0000';
   COST_PREFIX        = '$';
 
-
-
   // Token pricing (per token, USD)
   // gpt-4o: $5.00/1M input + $15.00/1M output ~ avg $10.00/1M
   // gpt-4o-mini: $0.15/1M input + $0.60/1M output ~ avg $0.375/1M
-  COST_PER_TOKEN_GPT4O      = 0.00001;   // $10.00 per 1M tokens
+  COST_PER_TOKEN_GPT4O      = 0.00001;     // $10.00 per 1M tokens
   COST_PER_TOKEN_GPT4O_MINI = 0.000000375; // $0.375 per 1M tokens
 
 implementation

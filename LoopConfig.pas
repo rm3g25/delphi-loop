@@ -1,4 +1,4 @@
-﻿unit LoopConfig;
+unit LoopConfig;
 
 // TODO v0.2: encrypt API keys using Windows DPAPI (CryptProtectData)
 
@@ -14,7 +14,6 @@ uses
 type
   TLoopSettings = record
     MaxIterations : Integer;
-    Language      : string;
     ExecutorIdx   : Integer;
     ReviewerIdx   : Integer;
   end;
@@ -75,7 +74,6 @@ const
   XML_MODEL        = 'Model';
 
   XML_MAX_ITER     = 'MaxIterations';
-  XML_LANGUAGE     = 'Language';
   XML_EXEC_IDX     = 'ExecutorIdx';
   XML_REV_IDX      = 'ReviewerIdx';
 
@@ -113,7 +111,6 @@ var
   M : TModelConfig;
 begin
   FSettings.MaxIterations := DEFAULT_MAX_ITERATIONS;
-  FSettings.Language      := 'Delphi / Object Pascal';
   FSettings.ExecutorIdx   := DEFAULT_EXECUTOR_INDEX;
   FSettings.ReviewerIdx   := DEFAULT_REVIEWER_INDEX;
 
@@ -128,6 +125,12 @@ begin
 
   P.Name    := PROVIDER_OPENAI_NAME;
   P.BaseURL := PROVIDER_OPENAI_URL;
+  P.APIKey  := '';
+  P.Kind    := ptOpenAI;
+  FProviders.Add(P);
+
+  P.Name    := PROVIDER_OPENROUTER_NAME;
+  P.BaseURL := PROVIDER_OPENROUTER_URL;
   P.APIKey  := '';
   P.Kind    := ptOpenAI;
   FProviders.Add(P);
@@ -155,6 +158,11 @@ begin
   M.DisplayName := MODEL_GPT5_DISPLAY;
   M.ModelID     := MODEL_GPT5_ID;
   M.ProviderIdx := 1;
+  FModels.Add(M);
+
+  M.DisplayName := MODEL_QWEN36_DISPLAY;
+  M.ModelID     := MODEL_QWEN36_ID;
+  M.ProviderIdx := 2;
   FModels.Add(M);
 end;
 
@@ -237,7 +245,6 @@ var
 begin
   Node := AParent.AddChild(XML_SETTINGS);
   Node.AddChild(XML_MAX_ITER).Text := IntToStr(AConfig.Settings.MaxIterations);
-  Node.AddChild(XML_LANGUAGE).Text := AConfig.Settings.Language;
   Node.AddChild(XML_EXEC_IDX).Text := IntToStr(AConfig.Settings.ExecutorIdx);
   Node.AddChild(XML_REV_IDX).Text  := IntToStr(AConfig.Settings.ReviewerIdx);
 end;
@@ -320,8 +327,6 @@ begin
   S               := AConfig.Settings;
   S.MaxIterations := StrToIntDef(Node.ChildValues[XML_MAX_ITER],
                                   DEFAULT_MAX_ITERATIONS);
-  S.Language      := VarToStrDef(Node.ChildValues[XML_LANGUAGE],
-                                  'Delphi / Object Pascal');
   S.ExecutorIdx   := StrToIntDef(Node.ChildValues[XML_EXEC_IDX],
                                   DEFAULT_EXECUTOR_INDEX);
   S.ReviewerIdx   := StrToIntDef(Node.ChildValues[XML_REV_IDX],

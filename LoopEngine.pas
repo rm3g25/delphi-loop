@@ -1,4 +1,4 @@
-﻿unit LoopEngine;
+unit LoopEngine;
 
 interface
 
@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Classes, System.Threading, System.JSON,
   System.Net.HttpClient, System.Net.HttpClientComponent,
   System.Generics.Collections,
-  LoopTypes, LoopConsts, LoopConfig;
+  LoopTypes, LoopConsts, LoopConfig, LoopPrompts;
 
 type
   TOnLogEvent      = procedure(const AMsg :string) of object;
@@ -184,7 +184,7 @@ var
   Request  :TJSONObject;
   Json     :TJSONObject;
 begin
-  Result  := '';
+  Result := '';
   Client := TNetHTTPClient.Create(nil);
   try
     Request := TJSONObject.Create;
@@ -234,8 +234,8 @@ var
   Choice   :TJSONObject;
   Usage    :TJSONObject;
 begin
-  Result       := '';
-  ATokensUsed  := 0;
+  Result      := '';
+  ATokensUsed := 0;
   Client := TNetHTTPClient.Create(nil);
   try
     Messages := TJSONArray.Create;
@@ -254,7 +254,10 @@ begin
       try
         Client.ContentType := 'application/json';
         Client.CustomHeaders['Authorization'] := 'Bearer ' + AAPIKey;
+        DoLog('POST: ' + ABaseURL + OPENAI_CHAT_PATH);
         Response := Client.Post(ABaseURL + OPENAI_CHAT_PATH, Body);
+        DoLog('Response: ' + Response.ContentAsString);
+
         if Response.StatusCode = 200 then
         begin
           Json := TJSONObject.ParseJSONValue(
@@ -312,6 +315,7 @@ var
   Review    :string;
   Iteration :Integer;
   Done      :Boolean;
+  Tokens    :Integer;
 begin
   Executor := FModels[AExecutorIdx];
   Reviewer := FModels[AReviewerIdx];
@@ -323,9 +327,9 @@ begin
   DoIter(ITER_GENERATING);
   DoLog(LOG_GENERATING);
 
-  var Tokens : Integer := 0;
+  Tokens := 0;
   Code := StripMarkdown(
-    AskModel(Executor, PROMPT_EXECUTOR + ATask, Tokens)
+    AskModel(Executor, GetExecutorPrompt + ATask, Tokens)
   );
   DoTokens(Tokens, Tokens * COST_PER_TOKEN_GPT4O);
 
@@ -345,7 +349,7 @@ begin
     DoLog('');
     DoLog(Format(LOG_REVIEW_HDR, [Iteration, Reviewer.DisplayName]));
 
-    Review := AskModel(Reviewer, PROMPT_REVIEWER + Code, Tokens);
+    Review := AskModel(Reviewer, GetReviewerPrompt + Code, Tokens);
     DoTokens(Tokens, Tokens * COST_PER_TOKEN_GPT4O);
 
     DoLog(LOG_REVIEW_PREFIX + Review);
@@ -365,7 +369,7 @@ begin
 
       Code := StripMarkdown(
         AskModel(Executor,
-          PROMPT_REFINE +
+          GetRefinePrompt +
           PROMPT_REFINE_CODE_LABEL   + Code   + #10 +
           PROMPT_REFINE_REVIEW_LABEL + Review,
           Tokens)

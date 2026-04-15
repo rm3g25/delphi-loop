@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  Caption = 'DelphiLoop v0.1'
+  Caption = 'DelphiLoop v0.2'
   ClientHeight = 620
   ClientWidth = 720
   Color = clBtnFace

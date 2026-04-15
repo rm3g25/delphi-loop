@@ -12,7 +12,6 @@ object frmSettings: TfrmSettings
   Font.Name = 'Segoe UI'
   Font.Style = []
   Position = poOwnerFormCenter
-  OnCreate = FormCreate
   TextHeight = 17
   object pnlTop: TPanel
     Left = 0
@@ -228,19 +227,6 @@ object frmSettings: TfrmSettings
       Font.Style = []
       ParentFont = False
     end
-    object lblLanguage: TLabel
-      Left = 200
-      Top = 20
-      Width = 52
-      Height = 15
-      Caption = 'Language'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -12
-      Font.Name = 'Segoe UI'
-      Font.Style = []
-      ParentFont = False
-    end
     object spnMaxIter: TSpinEdit
       Left = 110
       Top = 16
@@ -250,23 +236,6 @@ object frmSettings: TfrmSettings
       MinValue = 1
       TabOrder = 0
       Value = 4
-    end
-    object cmbLanguage: TComboBox
-      Left = 280
-      Top = 16
-      Width = 180
-      Height = 23
-      Style = csDropDownList
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -12
-      Font.Name = 'Segoe UI'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 1
-      Items.Strings = (
-        'Delphi / Object Pascal'
-        'C++ Builder')
     end
     object btnClose: TButton
       Left = 468
@@ -281,7 +250,7 @@ object frmSettings: TfrmSettings
       Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
-      TabOrder = 2
+      TabOrder = 1
       OnClick = btnCloseClick
     end
   end

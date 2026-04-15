@@ -31,11 +31,8 @@ type
     pnlGeneral        :TPanel;
     lblMaxIter        :TLabel;
     spnMaxIter        :TSpinEdit;
-    lblLanguage       :TLabel;
-    cmbLanguage       :TComboBox;
     btnClose          :TButton;
 
-    procedure FormCreate(Sender: TObject);
     procedure btnAddProviderClick(Sender: TObject);
     procedure btnEditProviderClick(Sender: TObject);
     procedure btnRemoveProviderClick(Sender: TObject);
@@ -61,16 +58,10 @@ implementation
 
 {$R *.dfm}
 
-procedure TfrmSettings.FormCreate(Sender: TObject);
-begin
-  cmbLanguage.ItemIndex := 0;
-end;
-
 procedure TfrmSettings.LoadFromConfig(AConfig :TLoopConfig);
 begin
   FConfig := AConfig;
-  spnMaxIter.Value      := FConfig.Settings.MaxIterations;
-  cmbLanguage.ItemIndex := 0;
+  spnMaxIter.Value := FConfig.Settings.MaxIterations;
   RefreshProviders;
   RefreshModels;
 end;

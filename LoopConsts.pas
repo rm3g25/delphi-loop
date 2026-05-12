@@ -5,7 +5,7 @@ interface
 const
   // App
   APP_TITLE   = 'DelphiLoop';
-  APP_VERSION = '0.2';
+  APP_VERSION = '0.3';
 
   // Defaults
   DEFAULT_MAX_ITERATIONS   = 4;
@@ -44,9 +44,12 @@ const
   OLLAMA_GENERATE_PATH     = '/api/generate';
   OPENAI_CHAT_PATH         = '/v1/chat/completions';
 
-  // API response fields
+  // API
   OPENAI_MAX_TOKENS        = 2048;
   NO_ISSUES_MARKER         = 'NO_ISSUES';
+
+  // HTTP error prefix (returned by AskOllama / AskOpenAI on non-200)
+  ERROR_HTTP_PREFIX        = 'Error: ';
 
   // Markdown strip tokens
   MARKDOWN_DELPHI          = '```delphi';
@@ -78,47 +81,15 @@ const
   PROMPT_REFINE_CODE_LABEL   = 'Code:' + #10;
   PROMPT_REFINE_REVIEW_LABEL = 'Review:' + #10;
 
-  // UI status messages
-  STATUS_READY       = 'Ready';
-  STATUS_RUNNING     = 'Running...';
-  STATUS_GENERATING  = 'Generating...';
-  STATUS_DONE        = 'Done';
-  STATUS_COPIED      = 'Copied to clipboard';
-  STATUS_ERROR       = 'Error: ';
-  STATS_FMT          = 'runs: %d  iter: %d  tokens: %d  cost: %s';
-
-  // UI log messages
-  LOG_EXECUTOR       = 'Executor : ';
-  LOG_REVIEWER       = 'Reviewer : ';
-  LOG_GENERATING     = 'Generating code...';
-  LOG_GENERATED      = 'Generated (%d chars)';
-  LOG_REFINED        = 'Refined (%d chars)';
-  LOG_CODE_START     = '--- CODE ---';
-  LOG_CODE_END       = '------------';
-  LOG_REVIEW_HDR     = '=== REVIEW %d by %s ===';
-  LOG_REFINE_HDR     = '=== REFINE %d by %s ===';
-  LOG_REVIEW_PREFIX  = 'Review: ';
-  LOG_PASSED         = 'Passed review after %d iteration(s)';
-  LOG_MAX_ITER       = 'Max iterations reached — using last version';
-
-  // UI iter status messages
-  ITER_GENERATING    = 'Generating...';
-  ITER_REVIEW        = 'Iteration %d/%d — Review...';
-  ITER_REFINE        = 'Iteration %d/%d — Refining...';
-  ITER_DONE          = 'Done';
-
-  // UI final status
-  STATUS_DONE_FMT    = 'Done — %d iteration(s)  |  %s -> %s';
-
   // Cost format
   COST_FORMAT        = '$0.0000';
   COST_PREFIX        = '$';
 
   // Token pricing (per token, USD)
-  // gpt-4o: $5.00/1M input + $15.00/1M output ~ avg $10.00/1M
-  // gpt-4o-mini: $0.15/1M input + $0.60/1M output ~ avg $0.375/1M
-  COST_PER_TOKEN_GPT4O      = 0.00001;     // $10.00 per 1M tokens
-  COST_PER_TOKEN_GPT4O_MINI = 0.000000375; // $0.375 per 1M tokens
+  // gpt-4o:      $5.00/1M input + $15.00/1M output ~ avg $10.00/1M
+  // gpt-4o-mini: $0.15/1M input +  $0.60/1M output ~ avg  $0.375/1M
+  COST_PER_TOKEN_GPT4O      = 0.00001;      // $10.00 per 1M tokens
+  COST_PER_TOKEN_GPT4O_MINI = 0.000000375;  // $0.375 per 1M tokens
 
 implementation
 

@@ -103,7 +103,7 @@ DelphiLoop/
 │
 ├── assets/                         ← prompt_*.md, dlogo.png, styles/
 ├── bin/                            ← build output; config with API keys lives here
-├── docs/                           ← CODESTYLE.md
+├── docs/                           ← screenshots
 └── tools/                          ← copy-assets.bat
 ```
 
@@ -144,7 +144,7 @@ Code rendering uses a hand-written lexer (`Syntax.DelphiLexer.pas`) and a custom
 
 ## Prompts
 
-Prompts are loaded from external markdown files placed next to the executable:
+Prompts are kept in `assets/` and staged next to the executable by `tools/copy-assets.bat` on build:
 
 ```
 prompt_executor.md
@@ -175,15 +175,15 @@ If a file is missing, DelphiLoop falls back to built-in defaults in `Engine.Cons
 ### Build
 
 1. Clone the repository
-2. Open `DelphiLoop.dpr` in RAD Studio
-3. Build (`Shift+F9`)
+2. Open `apps/DelphiLoop/DelphiLoop.dpr` in RAD Studio
+3. Build (`Shift+F9`) — the executable lands in `bin/`
 4. Run
 
 No third-party components. No GetIt packages. Pure FMX.
 
 ### First Run
 
-On first launch, DelphiLoop creates a default `DelphiLoop.xml` config file with three providers and several models pre-configured. Open **Settings** to add API keys.
+On first launch, DelphiLoop creates a default `DelphiLoop.xml` next to the executable in `bin/`, with three providers and several models pre-configured. Open **Settings** to add API keys. The config holds your keys and is git-ignored — it never leaves your machine.
 
 ---
 

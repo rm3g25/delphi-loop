@@ -77,30 +77,37 @@ The loop runs in a background thread. The UI stays responsive throughout. All ev
 ## Architecture
 
 ```
-DelphiLoop.dpr
+DelphiLoop/
 │
-├── uMain.pas                 ← UI only, subscribes to engine events
-│                               Built entirely in code — no DFM, no designer
+├── src/                            ← shared code, reusable by every utility
+│   ├── Engine/
+│   │   ├── Engine.pas              ← All agent logic, HTTP, JSON parsing
+│   │   │                             Communicates via typed events only
+│   │   ├── Engine.Types.pas        ← TProviderConfig, TModelConfig, TProviderType
+│   │   ├── Engine.Consts.pas       ← All strings, prompts, pricing constants
+│   │   ├── Engine.Config.pas       ← TLoopConfig (data) + TLoopConfigIO (XML)
+│   │   └── Engine.Prompts.pas      ← Prompts from .md files, constants as fallback
+│   │
+│   ├── Syntax/
+│   │   └── Syntax.DelphiLexer.pas  ← Hand-written Delphi lexer
+│   │                                 Keywords, identifiers, strings, comments
+│   └── UI/
+│       ├── UI.CodeView.pas         ← Custom TCodeView control, canvas-based
+│       └── UI.Consts.pas           ← Colors, sizes, glyphs
 │
-├── uCodeView.pas             ← Custom TCodeView control
-│                               Canvas-based Delphi syntax highlighter
+├── apps/
+│   └── DelphiLoop/
+│       ├── DelphiLoop.dpr
+│       └── UI.Main.pas             ← The application itself: FMX main form,
+│                                     built entirely in code, no designer
 │
-├── uDelphiLexer.pas          ← Hand-written Delphi lexer
-│                               Tokenizes keywords, identifiers, strings, comments
-│
-├── LoopEngine.pas            ← All agent logic, HTTP, JSON parsing
-│                               Communicates via callbacks only
-│
-├── LoopPrompts.pas           ← Loads prompts from .md files or falls back to constants
-│
-├── LoopConfig.pas            ← TLoopConfig (data) + TLoopConfigIO (XML)
-│
-├── LoopTypes.pas             ← TProviderConfig, TModelConfig, TProviderType
-│
-└── LoopConsts.pas            ← All strings, prompts, pricing constants
+├── assets/                         ← prompt_*.md, dlogo.png, styles/
+├── bin/                            ← build output; config with API keys lives here
+├── docs/                           ← CODESTYLE.md
+└── tools/                          ← copy-assets.bat
 ```
 
-The engine is decoupled from the UI by design. The same `LoopEngine` can run in a console app, a service, or an FMX Android app — just replace `uMain`.
+The engine is decoupled from the UI by design. Everything under `src/` is shared: the same `Engine` unit can run in a console app, a service, or an FMX Android app — a new utility is just another folder under `apps/`, pointing its search path at the same `src/`.
 
 ### Engine Events
 
@@ -131,7 +138,7 @@ The chat area uses a `TVertScrollBox` with manually positioned controls. Each me
 - **Done** — slim green status bar
 - **Result** — accent-bordered bubble, opens automatically, copy button
 
-Code rendering uses a hand-written lexer (`uDelphiLexer.pas`) and a custom `TCodeView` control that paints directly to canvas. No WebView2, no HTML, no Chromium. One `.exe`, no runtime.
+Code rendering uses a hand-written lexer (`Syntax.DelphiLexer.pas`) and a custom `TCodeView` control that paints directly to canvas. No WebView2, no HTML, no Chromium. One `.exe`, no runtime.
 
 ---
 
@@ -145,7 +152,7 @@ prompt_reviewer.md
 prompt_refine.md
 ```
 
-If a file is missing, DelphiLoop falls back to built-in defaults in `LoopConsts.pas`.
+If a file is missing, DelphiLoop falls back to built-in defaults in `Engine.Consts.pas`.
 
 **Executor** — minimum code only, no preamble, no explanations outside the code. Interprets the task, picks the simplest approach, writes it.
 

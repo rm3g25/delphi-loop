@@ -1,4 +1,4 @@
-﻿unit uDelphiLexer;
+﻿unit Syntax.DelphiLexer;
 
 {
   DelphiLoop — Delphi syntax lexer for code highlighting.

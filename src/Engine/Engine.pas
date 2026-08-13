@@ -1,4 +1,4 @@
-unit LoopEngine;
+unit Engine;
 
 {
   DelphiLoop v0.3 — Engine with semantic typed events.
@@ -24,7 +24,7 @@ uses
   System.SysUtils, System.Classes, System.Threading, System.JSON,
   System.Net.HttpClient, System.Net.HttpClientComponent,
   System.Generics.Collections,
-  LoopTypes, LoopConsts, LoopConfig, LoopPrompts;
+  Engine.Types, Engine.Consts, Engine.Config, Engine.Prompts;
 
 type
   TLoopPhase = (lpGenerating, lpReviewing, lpRefining);

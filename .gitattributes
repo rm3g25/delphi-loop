@@ -1,0 +1,40 @@
+# ===========================================================================
+#  Line endings and file kinds.
+#  RAD Studio warns on LF-terminated source, so sources are pinned to CRLF
+#  regardless of who or what wrote the file.
+# ===========================================================================
+
+# --- Sources: always CRLF ---
+*.pas text eol=crlf
+*.dpr text eol=crlf
+*.dpk text eol=crlf
+*.inc text eol=crlf
+*.dfm text eol=crlf
+*.fmx text eol=crlf
+*.dproj text eol=crlf
+*.groupproj text eol=crlf
+*.style text eol=crlf
+*.bat text eol=crlf
+
+# --- Docs: LF, they are read by GitHub, not by the IDE ---
+*.md text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# --- Binary: never touched ---
+*.res binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.vsf binary
+*.exe binary
+*.dcu binary
+
+# ===========================================================================
+#  Exception, last rule wins.
+#  Delphi style files are generated blobs - megabytes of bitmap data carried
+#  as text. Normalising line endings inside one can corrupt it, and nobody
+#  ever reads the diff. Matched by folder, not by extension: git patterns are
+#  case sensitive and the file on disk is spelled ".Style".
+# ===========================================================================
+assets/styles/** binary

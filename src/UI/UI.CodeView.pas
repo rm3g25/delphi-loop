@@ -1,4 +1,4 @@
-﻿unit uCodeView;
+﻿unit UI.CodeView;
 
 {
   DelphiLoop — FMX custom control for syntax-highlighted Delphi code.
@@ -27,7 +27,7 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes,
   System.Generics.Collections, System.Threading,
   FMX.Types, FMX.Controls, FMX.Graphics,
-  uDelphiLexer;
+  Syntax.DelphiLexer;
 
 const
   // Syntax token colors — VSCode Dark+ palette

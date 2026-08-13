@@ -1,4 +1,4 @@
-﻿unit uMain;
+﻿unit UI.Main;
 
 {
   DelphiLoop v0.3 — FMX main form
@@ -43,8 +43,8 @@ uses
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.EditBox,
   FMX.Layouts, FMX.Objects, FMX.StdCtrls, FMX.Edit, FMX.Memo, FMX.Styles,
   FMX.ListBox, FMX.ScrollBox, FMX.SpinBox, FMX.Platform, FMX.Ani,
-  LoopEngine, LoopConfig, LoopTypes, LoopConsts,
-  uCodeView, uUIConsts;
+  Engine, Engine.Config, Engine.Types, Engine.Consts,
+  UI.CodeView, UI.Consts;
 
 type
   // Review bubble style — three distinct visual modes.

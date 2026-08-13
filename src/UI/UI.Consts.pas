@@ -1,4 +1,4 @@
-﻿unit uUIConsts;
+﻿unit UI.Consts;
 
 {
   DelphiLoop v0.3 — UI constants

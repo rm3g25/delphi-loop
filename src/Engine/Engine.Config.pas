@@ -1,4 +1,4 @@
-unit LoopConfig;
+unit Engine.Config;
 
 // TODO v0.2: encrypt API keys using Windows DPAPI (CryptProtectData)
 
@@ -8,8 +8,8 @@ uses
   System.SysUtils, System.Classes, System.Variants,
   System.Generics.Collections,
   Xml.XMLDoc, Xml.XMLIntf,
-  LoopTypes,
-  LoopConsts;
+  Engine.Types,
+  Engine.Consts;
 
 type
   TLoopSettings = record

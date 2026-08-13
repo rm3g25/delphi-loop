@@ -1,4 +1,4 @@
-unit LoopPrompts;
+unit Engine.Prompts;
 
 interface
 
@@ -10,7 +10,7 @@ implementation
 
 uses
   System.SysUtils, System.Classes,
-  LoopConsts;
+  Engine.Consts;
 
 const
   FILE_EXECUTOR = 'prompt_executor.md';

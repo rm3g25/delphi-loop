@@ -1,30 +1,40 @@
-unit Engine.Prompts;
+﻿unit Engine.Prompts;
+
+{
+  Agent prompts with external override.
+  Each prompt is loaded from a markdown file next to the executable; when the
+  file is missing or empty, the built-in default from Engine.Consts is used.
+  File names are user-facing contract documented in the README - frozen.
+}
 
 interface
 
-function GetExecutorPrompt : string;
-function GetReviewerPrompt : string;
-function GetRefinePrompt   : string;
+function GetExecutorPrompt: string;
+function GetReviewerPrompt: string;
+function GetRefinePrompt: string;
 
 implementation
 
 uses
-  System.SysUtils, System.Classes,
+  System.SysUtils,
+  System.Classes,
   Engine.Consts;
 
 const
-  FILE_EXECUTOR = 'prompt_executor.md';
-  FILE_REVIEWER = 'prompt_reviewer.md';
-  FILE_REFINE   = 'prompt_refine.md';
+  // Override file names - documented in the README, values are frozen.
+  ExecutorPromptFile = 'prompt_executor.md';
+  ReviewerPromptFile = 'prompt_reviewer.md';
+  RefinePromptFile = 'prompt_refine.md';
 
-function LoadFromFile(const AFileName : string) : string;
+function LoadPromptFile(const AFileName: string): string;
 var
-  Lines : TStringList;
-  Path  : string;
+  Path: string;
+  Lines: TStringList;
 begin
   Result := '';
-  Path   := ExtractFilePath(ParamStr(0)) + AFileName;
-  if not FileExists(Path) then Exit;
+  Path := ExtractFilePath(ParamStr(0)) + AFileName;
+  if not FileExists(Path) then
+    Exit;
 
   Lines := TStringList.Create;
   try
@@ -35,25 +45,26 @@ begin
   end;
 end;
 
-function GetExecutorPrompt : string;
+function GetPromptOrDefault(const AFileName, ADefault: string): string;
 begin
-  Result := LoadFromFile(FILE_EXECUTOR);
+  Result := LoadPromptFile(AFileName);
   if Result = '' then
-    Result := PROMPT_EXECUTOR;
+    Result := ADefault;
 end;
 
-function GetReviewerPrompt : string;
+function GetExecutorPrompt: string;
 begin
-  Result := LoadFromFile(FILE_REVIEWER);
-  if Result = '' then
-    Result := PROMPT_REVIEWER;
+  Result := GetPromptOrDefault(ExecutorPromptFile, PromptExecutor);
 end;
 
-function GetRefinePrompt : string;
+function GetReviewerPrompt: string;
 begin
-  Result := LoadFromFile(FILE_REFINE);
-  if Result = '' then
-    Result := PROMPT_REFINE;
+  Result := GetPromptOrDefault(ReviewerPromptFile, PromptReviewer);
+end;
+
+function GetRefinePrompt: string;
+begin
+  Result := GetPromptOrDefault(RefinePromptFile, PromptRefine);
 end;
 
 end.

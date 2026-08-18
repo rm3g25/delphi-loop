@@ -1,55 +1,56 @@
 ﻿unit UI.CodeView;
 
 {
-  DelphiLoop — FMX custom control for syntax-highlighted Delphi code.
+  FMX custom control for syntax-highlighted Delphi code.
 
   Renders tokenized source to FMX Canvas using Cascadia Code (monospace).
   Token colors are VSCode dark+-inspired, tuned to the DelphiLoop palette.
 
   Usage:
     CV := TCodeView.Create(Self);
-    CV.Parent := SomeContainer;  // container clips rounded corners
-    CV.Align  := TAlignLayout.Top;
+    CV.Parent := SomeContainer; // container clips rounded corners
+    CV.Align := TAlignLayout.Top;
     CV.SetCode(MySourceString);
 
   Contract:
-    - Parent provides rounded background + clipping (TRectangle + ClipChildren).
-    - This control paints a flat background and renders tokens on top.
-    - HitTest = False — read-only display, no interaction.
-    - Height is auto-calculated from line count on each SetCode call.
-    - Font is measured on first Paint (Canvas is valid there); subsequent
-      paints use cached FCharWidth / FLineHeight.
+  - Parent provides rounded background + clipping (TRectangle + ClipChildren).
+  - This control paints a flat background and renders tokens on top.
+  - HitTest = False - read-only display, no interaction.
+  - Height is auto-calculated from line count on each SetCode call.
+  - Font is measured on first Paint (Canvas is valid there); subsequent
+    paints use cached FCharWidth / FLineHeight.
 }
 
 interface
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.Classes,
-  System.Generics.Collections, System.Threading,
-  FMX.Types, FMX.Controls, FMX.Graphics,
+  System.Classes,
+  System.Generics.Collections,
+  FMX.Controls,
   Syntax.DelphiLexer;
 
 const
-  // Syntax token colors — VSCode Dark+ palette
-  CCLR_BG       = $FF1E1E2E;  // code block background (slightly blue-dark)
-  CCLR_KEYWORD  = $FF569CD6;  // blue       — begin end if procedure ...
-  CCLR_STRING   = $FFCE9178;  // orange     — 'quoted string' #13
-  CCLR_NUMBER   = $FFB5CEA8;  // sage green — 42  3.14  $FF
-  CCLR_COMMENT  = $FF6A9955;  // muted green — // { } (* *)
-  CCLR_IDENT    = $FFE8E8EC;  // near-white  — identifiers
-  CCLR_OPERATOR = $FF888896;  // dim gray    — := + - . , ; ( )
-  CCLR_DEFAULT  = $FFE8E8EC;
+  // Syntax token colors - VSCode Dark+ palette
+  CodeColorBackground = $FF1E1E2E; // code block background (slightly blue-dark)
+  CodeColorKeyword = $FF569CD6; // blue - begin end if procedure ...
+  CodeColorString = $FFCE9178; // orange - 'quoted string' #13
+  CodeColorNumber = $FFB5CEA8; // sage green - 42 3.14 $FF
+  CodeColorComment = $FF6A9955; // muted green - // { } (* *)
+  CodeColorIdentifier = $FFE8E8EC; // near-white - identifiers
+  CodeColorOperator = $FF888896; // dim gray - := + - . , ; ( )
+  CodeColorDefault = $FFE8E8EC;
 
-  CV_FONT_SIZE  = 12.5;
-  CV_PAD_H      = 16.0;       // horizontal padding inside the code block
-  CV_PAD_V      = 13.0;       // vertical padding
-  CV_LINE_GAP   = 4.0;        // extra pixels between lines beyond font height
-  CV_TAB_COLS   = 2;          // tab = 2 spaces (Delphi community standard)
+  CodeFontFamily = 'Cascadia Code';
+  CodeFontSize = 12.5;
+  CodePaddingHorizontal = 16.0; // horizontal padding inside the code block
+  CodePaddingVertical = 13.0; // vertical padding
+  CodeLineGap = 4.0; // extra pixels between lines beyond font height
+  CodeTabColumns = 2; // tab = 2 spaces (Delphi community standard)
 
   // Estimated metrics used before first Paint measures the actual font.
   // Cascadia Code 12.5px: empirically ~7.5px wide, ~17px tall.
-  CV_CHAR_W_EST = 7.5;
-  CV_LINE_H_EST = CV_FONT_SIZE * 1.5 + CV_LINE_GAP;
+  CodeCharWidthEstimate = 7.5;
+  CodeLineHeightEstimate = CodeFontSize * 1.5 + CodeLineGap;
 
 type
   TCodeView = class(TControl)
@@ -63,17 +64,16 @@ type
     FLineHeight: Single;
     FMeasured: Boolean;
 
-    function ColorForKind(AKind: TTokenKind): TAlphaColor; inline;
+    procedure ApplyCodeFont;
     procedure MeasureFont;
     procedure UpdateHeight;
-    function CountLines: Integer;
 
   protected
     procedure Paint; override;
 
   public
     constructor Create(AOwner: TComponent); override;
-    destructor  Destroy; override;
+    destructor Destroy; override;
 
     // Tokenizes ACode and schedules a repaint. Safe to call from main thread only.
     procedure SetCode(const ACode: string);
@@ -83,18 +83,50 @@ type
 
 implementation
 
+uses
+  System.Types,
+  System.UITypes,
+  FMX.Types,
+  FMX.Graphics;
+
+// ===========================================================================
+//  Free helpers - no control state involved
+// ===========================================================================
+
+function ColorForKind(AKind: TTokenKind): TAlphaColor; inline;
+begin
+  case AKind of
+    tkKeyword: Result := CodeColorKeyword;
+    tkString: Result := CodeColorString;
+    tkNumber: Result := CodeColorNumber;
+    tkComment: Result := CodeColorComment;
+    tkOperator: Result := CodeColorOperator;
+    tkIdentifier: Result := CodeColorIdentifier;
+  else
+    Result := CodeColorDefault;
+  end;
+end;
+
+function CountLines(const AText: string): Integer;
+begin
+  Result := 1;
+  for var Ch in AText do
+    if Ch = #10 then
+      Inc(Result);
+end;
+
 // ===========================================================================
 //  Lifecycle
 // ===========================================================================
 constructor TCodeView.Create(AOwner: TComponent);
 begin
   inherited;
-  FLexer     := TDelphiLexer.Create;
-  FTokens    := TList<TCodeToken>.Create;
-  FMeasured  := False;
-  FCharWidth := CV_CHAR_W_EST;
-  FLineHeight:= CV_LINE_H_EST;
-  HitTest    := False; // display only
+  FLexer := TDelphiLexer.Create;
+  FTokens := TList<TCodeToken>.Create;
+  FMeasured := False;
+  FCharWidth := CodeCharWidthEstimate;
+  FLineHeight := CodeLineHeightEstimate;
+  HitTest := False; // display only
 end;
 
 destructor TCodeView.Destroy;
@@ -105,42 +137,15 @@ begin
 end;
 
 // ===========================================================================
-//  Color map
-// ===========================================================================
-function TCodeView.ColorForKind(AKind: TTokenKind): TAlphaColor;
-begin
-  case AKind of
-    tkKeyword:    Result := CCLR_KEYWORD;
-    tkString:     Result := CCLR_STRING;
-    tkNumber:     Result := CCLR_NUMBER;
-    tkComment:    Result := CCLR_COMMENT;
-    tkOperator:   Result := CCLR_OPERATOR;
-    tkIdentifier: Result := CCLR_IDENT;
-  else
-    Result := CCLR_DEFAULT;
-  end;
-end;
-
-// ===========================================================================
 //  Height management
 // ===========================================================================
-function TCodeView.CountLines: Integer;
-var
-  C: Char;
-begin
-  Result := 1;
-  for C in FCode do
-    if C = #10 then
-      Inc(Result);
-end;
-
 procedure TCodeView.UpdateHeight;
 begin
-  Height := CV_PAD_V * 2 + CountLines * FLineHeight;
+  Height := CodePaddingVertical * 2 + CountLines(FCode) * FLineHeight;
 end;
 
 // ===========================================================================
-//  SetCode — retokenize and refresh
+//  SetCode - retokenize and refresh
 // ===========================================================================
 procedure TCodeView.SetCode(const ACode: string);
 begin
@@ -152,22 +157,27 @@ begin
 end;
 
 // ===========================================================================
-//  Font measurement — called once inside Paint when Canvas is valid
+//  Font measurement - called once inside Paint when Canvas is valid
 // ===========================================================================
+procedure TCodeView.ApplyCodeFont;
+begin
+  Canvas.Font.Family := CodeFontFamily;
+  Canvas.Font.Size := CodeFontSize;
+end;
+
 procedure TCodeView.MeasureFont;
 var
-  R: TRectF;
+  Bounds: TRectF;
 begin
-  Canvas.Font.Family := 'Cascadia Code';
-  Canvas.Font.Size   := CV_FONT_SIZE;
+  ApplyCodeFont;
 
-  // Measure a typical wide character — 'W' in monospace = any char
-  R := RectF(0, 0, 9999, 9999);
-  Canvas.MeasureText(R, 'W', False, [], TTextAlign.Leading, TTextAlign.Leading);
+  // Measure a typical wide character - 'W' in monospace = any char
+  Bounds := RectF(0, 0, 9999, 9999);
+  Canvas.MeasureText(Bounds, 'W', False, [], TTextAlign.Leading, TTextAlign.Leading);
 
-  FCharWidth  := R.Width;
-  FLineHeight := R.Height + CV_LINE_GAP;
-  FMeasured   := True;
+  FCharWidth := Bounds.Width;
+  FLineHeight := Bounds.Height + CodeLineGap;
+  FMeasured := True;
 
   // Recalculate height with accurate metrics.
   // Deferred so we don't mutate layout mid-Paint.
@@ -182,15 +192,11 @@ end;
 // ===========================================================================
 procedure TCodeView.Paint;
 var
-  I: Integer;
-  Token: TCodeToken;
-  C: Char;
-  X, Y, TW: Single;
-  ColPos, NextTab: Integer;
-  R: TRectF;
+  CursorX: Single;
+  CursorY: Single;
 begin
   // --- Background ---
-  Canvas.Fill.Color := CCLR_BG;
+  Canvas.Fill.Color := CodeColorBackground;
   Canvas.FillRect(LocalRect, 0, 0, [], 1);
 
   if FTokens.Count = 0 then
@@ -201,54 +207,53 @@ begin
     MeasureFont;
 
   // --- Set font for all text drawing ---
-  Canvas.Font.Family := 'Cascadia Code';
-  Canvas.Font.Size   := CV_FONT_SIZE;
+  ApplyCodeFont;
 
-  X := CV_PAD_H;
-  Y := CV_PAD_V;
+  CursorX := CodePaddingHorizontal;
+  CursorY := CodePaddingVertical;
 
-  for I := 0 to FTokens.Count - 1 do
+  for var i := 0 to FTokens.Count - 1 do
   begin
-    Token := FTokens[I];
+    var Token := FTokens[i];
 
-    // --- Whitespace — advance cursor, handle newlines ---
+    // --- Whitespace - advance cursor, handle newlines ---
     if Token.Kind = tkWhitespace then
     begin
-      for C in Token.Text do
+      for var Ch in Token.Text do
       begin
-        case C of
-          #10: // LF — new line
+        case Ch of
+          #10: // LF - new line
           begin
-            X := CV_PAD_H;
-            Y := Y + FLineHeight;
+            CursorX := CodePaddingHorizontal;
+            CursorY := CursorY + FLineHeight;
           end;
-          #13: ; // CR — skip (CRLF: LF above does the job)
-          #9:    // Tab — advance to next tab stop
+          #13: ; // CR - skip (CRLF: LF above does the job)
+          #9: // Tab - advance to next tab stop
           begin
-            ColPos  := Round((X - CV_PAD_H) / FCharWidth);
-            NextTab := ((ColPos div CV_TAB_COLS) + 1) * CV_TAB_COLS;
-            X       := CV_PAD_H + NextTab * FCharWidth;
+            var Column := Round((CursorX - CodePaddingHorizontal) / FCharWidth);
+            var NextTabStop := ((Column div CodeTabColumns) + 1) * CodeTabColumns;
+            CursorX := CodePaddingHorizontal + NextTabStop * FCharWidth;
           end;
         else
-          X := X + FCharWidth; // regular space
+          CursorX := CursorX + FCharWidth; // regular space
         end;
       end;
       Continue;
     end;
 
     // --- Skip tokens below visible area (performance guard) ---
-    if Y > LocalRect.Bottom then
+    if CursorY > LocalRect.Bottom then
       Break;
 
-    // --- Monospace: token width = char count × char width ---
-    TW := Length(Token.Text) * FCharWidth;
+    // --- Monospace: token width = char count x char width ---
+    var TokenWidth := Length(Token.Text) * FCharWidth;
 
     // --- Draw token ---
     Canvas.Fill.Color := ColorForKind(Token.Kind);
-    R := RectF(X, Y, X + TW, Y + FLineHeight);
-    Canvas.FillText(R, Token.Text, False, 1, [], TTextAlign.Leading, TTextAlign.Leading);
+    var TokenRect := RectF(CursorX, CursorY, CursorX + TokenWidth, CursorY + FLineHeight);
+    Canvas.FillText(TokenRect, Token.Text, False, 1, [], TTextAlign.Leading, TTextAlign.Leading);
 
-    X := X + TW;
+    CursorX := CursorX + TokenWidth;
   end;
 end;
 

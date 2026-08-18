@@ -242,7 +242,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="UI.Main.pas"/>
+        <DCCReference Include="Main.pas"/>
         <DCCReference Include="..\..\src\Engine\Engine.pas"/>
         <DCCReference Include="..\..\src\Engine\Engine.Config.pas"/>
         <DCCReference Include="..\..\src\Engine\Engine.Types.pas"/>

@@ -1,27 +1,26 @@
 ﻿unit Syntax.DelphiLexer;
 
 {
-  DelphiLoop — Delphi syntax lexer for code highlighting.
+  Delphi syntax lexer for code highlighting.
 
   Single-pass, left-to-right. Produces a flat TList<TCodeToken>.
-  No FMX / VCL dependency — pure System units only.
+  No FMX / VCL dependency - pure System units only.
   Caller owns the returned list.
 
   Recognized token kinds:
-    tkKeyword    — reserved words (case-insensitive)
-    tkIdentifier — user identifiers
-    tkString     — 'quoted' literals and #NN char literals
-    tkNumber     — decimal / float / hex ($FF)
-    tkComment    — // line  |  (* block *)
-    tkOperator   — := + - * / < > = ( ) [ ] . , ; : @ ^ ..
-    tkWhitespace — spaces, tabs, CR, LF
-    tkUnknown    — anything else (should not appear in valid code)
+  - tkKeyword: reserved words (case-insensitive)
+  - tkIdentifier: user identifiers
+  - tkString: 'quoted' literals and #NN char literals
+  - tkNumber: decimal / float / hex ($FF)
+  - tkComment: // line, (* block *), brace block
+  - tkOperator: := + - * / < > = ( ) [ ] . , ; : @ ^ ..
+  - tkWhitespace: spaces, tabs, CR, LF
+  - tkUnknown: anything else (should not appear in valid code)
 }
 
 interface
 
 uses
-  System.SysUtils,
   System.Generics.Collections;
 
 type
@@ -44,13 +43,13 @@ type
   TDelphiLexer = class
   private
     FSource: string;
-    FPos: Integer;   // 1-based, Delphi string convention
+    FPos: Integer; // 1-based, Delphi string convention
     FLen: Integer;
     FKeywords: TDictionary<string, Boolean>;
 
-    function  Current: Char; inline;
-    function  Peek(AOffset: Integer = 1): Char; inline;
-    function  AtEnd: Boolean; inline;
+    function Current: Char; inline;
+    function Peek(AOffset: Integer = 1): Char; inline;
+    function AtEnd: Boolean; inline;
     procedure Advance(ACount: Integer = 1); inline;
 
     function ReadWhitespace: string;
@@ -64,17 +63,13 @@ type
     function ReadIdentifier: string;
     function ReadOperator: string;
 
-    function IsIdentStart(C: Char): Boolean; inline;
-    function IsIdentPart(C: Char): Boolean; inline;
-    function IsDigit(C: Char): Boolean; inline;
 
     procedure BuildKeywords;
-    function  IsKeyword(const AWord: string): Boolean; inline;
+    function IsKeyword(const AWord: string): Boolean; inline;
 
-    function MakeToken(const AText: string; AKind: TTokenKind): TCodeToken;
   public
     constructor Create;
-    destructor  Destroy; override;
+    destructor Destroy; override;
 
     // Returns a new TList<TCodeToken>. Caller is responsible for freeing it.
     function Tokenize(const ASource: string): TList<TCodeToken>;
@@ -82,12 +77,55 @@ type
 
 implementation
 
+uses
+  System.SysUtils;
+
+// ===========================================================================
+//  Character classification and token construction - free functions,
+//  no lexer state involved
+// ===========================================================================
+
+function IsIdentStart(AChar: Char): Boolean; inline;
+begin
+  Result := CharInSet(AChar, ['A'..'Z', 'a'..'z', '_']);
+end;
+
+function IsIdentPart(AChar: Char): Boolean; inline;
+begin
+  Result := CharInSet(AChar, ['A'..'Z', 'a'..'z', '0'..'9', '_']);
+end;
+
+function IsDigit(AChar: Char): Boolean; inline;
+begin
+  Result := CharInSet(AChar, ['0'..'9']);
+end;
+
+// The two-char operators the language defines: := .. <> <= >=
+function IsTwoCharOperator(AFirst, ASecond: Char): Boolean; inline;
+begin
+  Result :=
+    ((AFirst = ':') and (ASecond = '=')) or
+    ((AFirst = '.') and (ASecond = '.')) or
+    ((AFirst = '<') and (ASecond = '>')) or
+    ((AFirst = '<') and (ASecond = '=')) or
+    ((AFirst = '>') and (ASecond = '='));
+end;
+
+function MakeToken(const AText: string; AKind: TTokenKind): TCodeToken;
+begin
+  Result.Text := AText;
+  Result.Kind := AKind;
+end;
+
 // ===========================================================================
 //  Keyword table
 // ===========================================================================
 procedure TDelphiLexer.BuildKeywords;
 const
-  KW: array[0..88] of string = (
+  // Reserved words plus common std types and directives - everything the
+  // highlighter paints as a keyword. The [0..88] bound is checked by the
+  // compiler against the element count - adjust both together.
+  Keywords: array[0..88] of string = (
     'and', 'array', 'as', 'asm',
     'begin', 'boolean', 'break',
     'cardinal', 'case', 'char', 'class', 'const', 'constructor', 'continue',
@@ -111,11 +149,9 @@ const
     'while', 'with', 'write',
     'xor'
   );
-var
-  W: string;
 begin
-  for W in KW do
-    FKeywords.AddOrSetValue(W, True);
+  for var Keyword in Keywords do
+    FKeywords.AddOrSetValue(Keyword, True);
 end;
 
 // ===========================================================================
@@ -147,11 +183,11 @@ end;
 
 function TDelphiLexer.Peek(AOffset: Integer): Char;
 var
-  P: Integer;
+  Position: Integer;
 begin
-  P := FPos + AOffset;
-  if (P >= 1) and (P <= FLen) then
-    Result := FSource[P]
+  Position := FPos + AOffset;
+  if (Position >= 1) and (Position <= FLen) then
+    Result := FSource[Position]
   else
     Result := #0;
 end;
@@ -166,37 +202,13 @@ begin
   Inc(FPos, ACount);
 end;
 
-// ===========================================================================
-//  Character classification
-// ===========================================================================
-function TDelphiLexer.IsIdentStart(C: Char): Boolean;
-begin
-  Result := CharInSet(C, ['A'..'Z', 'a'..'z', '_']);
-end;
-
-function TDelphiLexer.IsIdentPart(C: Char): Boolean;
-begin
-  Result := CharInSet(C, ['A'..'Z', 'a'..'z', '0'..'9', '_']);
-end;
-
-function TDelphiLexer.IsDigit(C: Char): Boolean;
-begin
-  Result := CharInSet(C, ['0'..'9']);
-end;
-
 function TDelphiLexer.IsKeyword(const AWord: string): Boolean;
 begin
   Result := FKeywords.ContainsKey(AWord);
 end;
 
-function TDelphiLexer.MakeToken(const AText: string; AKind: TTokenKind): TCodeToken;
-begin
-  Result.Text := AText;
-  Result.Kind := AKind;
-end;
-
 // ===========================================================================
-//  Readers — each consumes chars and returns the raw text
+//  Readers - each consumes chars and returns the raw text
 // ===========================================================================
 function TDelphiLexer.ReadWhitespace: string;
 var
@@ -220,7 +232,7 @@ begin
 end;
 
 function TDelphiLexer.ReadBlockCommentBrace: string;
-// Consumes { ... } — nested braces NOT supported (standard Pascal)
+// Consumes { ... } - nested braces NOT supported (standard Pascal)
 var
   Start: Integer;
 begin
@@ -269,14 +281,14 @@ begin
     if Current = '''' then
     begin
       Advance;
-      // Doubled quote is an escape — keep going
+      // Doubled quote is an escape - keep going
       if (not AtEnd) and (Current = '''') then
         Advance
       else
         Break;
     end
     else if CharInSet(Current, [#13, #10]) then
-      Break  // unterminated — stop at EOL gracefully
+      Break  // unterminated - stop at EOL gracefully
     else
       Advance;
   end;
@@ -284,7 +296,7 @@ begin
 end;
 
 function TDelphiLexer.ReadCharLiteral: string;
-// Consumes #NN or #$NN — chains of them are one token
+// Consumes #NN or #$NN - chains of them are one token
 // e.g.  #13#10  or  #$0D
 var
   Start: Integer;
@@ -328,6 +340,7 @@ begin
   Start := FPos;
   while (not AtEnd) and IsDigit(Current) do
     Advance;
+
   // Optional fractional part
   if (not AtEnd) and (Current = '.') and IsDigit(Peek) then
   begin
@@ -335,6 +348,7 @@ begin
     while (not AtEnd) and IsDigit(Current) do
       Advance;
   end;
+
   // Optional exponent
   if (not AtEnd) and CharInSet(Current, ['e', 'E']) then
   begin
@@ -358,26 +372,22 @@ begin
 end;
 
 function TDelphiLexer.ReadOperator: string;
-// Consumes one operator; handles two-char ones first: := .. //
+// Consumes one operator; two-char ones first: := .. <> <= >=
 var
-  C, N: Char;
+  Ch: Char;
+  Next: Char;
 begin
-  C := Current;
-  N := Peek;
-  // Two-char operators
-  if ((C = ':') and (N = '=')) or  // :=
-     ((C = '.') and (N = '.')) or  // ..
-     ((C = '<') and (N = '>')) or  // <>
-     ((C = '<') and (N = '=')) or  // <=
-     ((C = '>') and (N = '='))     // >=
-  then
+  Ch := Current;
+  Next := Peek;
+
+  if IsTwoCharOperator(Ch, Next) then
   begin
-    Result := C + N;
+    Result := Ch + Next;
     Advance(2);
   end
   else
   begin
-    Result := C;
+    Result := Ch;
     Advance;
   end;
 end;
@@ -386,84 +396,79 @@ end;
 //  Main tokenizer
 // ===========================================================================
 function TDelphiLexer.Tokenize(const ASource: string): TList<TCodeToken>;
-var
-  C: Char;
-  Text: string;
-  Kind: TTokenKind;
-  Lower: string;
 begin
   FSource := ASource;
-  FPos    := 1;
-  FLen    := Length(ASource);
+  FPos := 1;
+  FLen := Length(ASource);
 
   Result := TList<TCodeToken>.Create;
 
   while not AtEnd do
   begin
-    C := Current;
+    var Ch := Current;
 
     // --- Whitespace ---
-    if CharInSet(C, [' ', #9, #13, #10]) then
+    if CharInSet(Ch, [' ', #9, #13, #10]) then
     begin
       Result.Add(MakeToken(ReadWhitespace, tkWhitespace));
       Continue;
     end;
 
     // --- Line comment: // ---
-    if (C = '/') and (Peek = '/') then
+    if (Ch = '/') and (Peek = '/') then
     begin
       Result.Add(MakeToken(ReadLineComment, tkComment));
       Continue;
     end;
 
     // --- Block comment: { } ---
-    if C = '{' then
+    if Ch = '{' then
     begin
       Result.Add(MakeToken(ReadBlockCommentBrace, tkComment));
       Continue;
     end;
 
     // --- Block comment: (* *) ---
-    if (C = '(') and (Peek = '*') then
+    if (Ch = '(') and (Peek = '*') then
     begin
       Result.Add(MakeToken(ReadBlockCommentParen, tkComment));
       Continue;
     end;
 
     // --- String literal: '...' ---
-    if C = '''' then
+    if Ch = '''' then
     begin
       Result.Add(MakeToken(ReadString, tkString));
       Continue;
     end;
 
     // --- Char literal: #13 #$0D ---
-    if C = '#' then
+    if Ch = '#' then
     begin
       Result.Add(MakeToken(ReadCharLiteral, tkString));
       Continue;
     end;
 
     // --- Hex number: $FF ---
-    if C = '$' then
+    if Ch = '$' then
     begin
       Result.Add(MakeToken(ReadHexNumber, tkNumber));
       Continue;
     end;
 
     // --- Decimal / float number ---
-    if IsDigit(C) then
+    if IsDigit(Ch) then
     begin
       Result.Add(MakeToken(ReadNumber, tkNumber));
       Continue;
     end;
 
     // --- Identifier or keyword ---
-    if IsIdentStart(C) then
+    if IsIdentStart(Ch) then
     begin
-      Text  := ReadIdentifier;
-      Lower := LowerCase(Text);
-      if IsKeyword(Lower) then
+      var Text := ReadIdentifier;
+      var Kind: TTokenKind;
+      if IsKeyword(LowerCase(Text)) then
         Kind := tkKeyword
       else
         Kind := tkIdentifier;
@@ -472,15 +477,15 @@ begin
     end;
 
     // --- Operators and punctuation ---
-    if CharInSet(C, ['+', '-', '*', '/', '=', '<', '>', '(', ')',
-                     '[', ']', '.', ',', ';', ':', '@', '^', '&', '!']) then
+    if CharInSet(Ch, ['+', '-', '*', '/', '=', '<', '>', '(', ')',
+      '[', ']', '.', ',', ';', ':', '@', '^', '&', '!']) then
     begin
       Result.Add(MakeToken(ReadOperator, tkOperator));
       Continue;
     end;
 
-    // --- Unknown — consume one char so we never loop forever ---
-    Result.Add(MakeToken(C, tkUnknown));
+    // --- Unknown - consume one char so we never loop forever ---
+    Result.Add(MakeToken(Ch, tkUnknown));
     Advance;
   end;
 end;
